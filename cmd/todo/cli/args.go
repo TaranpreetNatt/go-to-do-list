@@ -1,21 +1,25 @@
 package cli
 
 import (
-	"errors"
 	"flag"
 	"os"
 )
 
-func GetArgs(args []string) (string, error) {
+func GetArgs(args []string, file *os.File) (string, error) {
 	os.Args = args
 
-	createValue := flag.String("create", "", "Create a task")
+	// createValue := flag.String("create", "", "Create a task")
+
+	flag.Func("create", "Create a task", func(s string) error {
+		return nil
+	})
 
 	flag.Parse()
 
-	if *createValue == "" {
-		return "", errors.New("Cannot create a task with an empty string")
-	}
-
-	return *createValue, nil
+	// if *createValue == "" {
+	// 	return "", errors.New("Cannot create a task with an empty string")
+	// }
+	//
+	// return *createValue, nil
+	return "", nil
 }
