@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"bytes"
 	"flag"
 	"testing"
 
@@ -23,7 +24,8 @@ func TestGetCreateArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			flag.CommandLine = flag.NewFlagSet(tt.input[0], flag.ExitOnError)
-			got, err := cli.GetArgs(tt.input)
+			var buf bytes.Buffer
+			got, err := cli.GetArgs(tt.input, &buf)
 
 			if tt.expectErr {
 				if err == nil {

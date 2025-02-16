@@ -1,21 +1,31 @@
 package cli
 
 import (
-	"errors"
 	"flag"
+	"fmt"
 	"os"
+
+	tasks "github.com/taranpreetnatt/todo/internal/tasks"
 )
 
-func GetArgs(args []string) (string, error) {
+func GetArgs(args []string, file *os.File) (string, error) {
 	os.Args = args
 
-	createValue := flag.String("create", "", "Create a task")
+	flag.Func("create", "Create a task", func(s string) error {
+
+		newTask, newTaskErr := tasks.NewTask(file, s)
+		if newTaskErr != nil {
+			return fmt.Errorf("Error creating new Task: %w", newTaskErr)
+		}
+
+		err := tasks.CreateTask(file, newTask)
+		if err != nil {
+			return fmt.Errorf("Error creating tasks: %w", err)
+		}
+		return nil
+	})
 
 	flag.Parse()
 
-	if *createValue == "" {
-		return "", errors.New("Cannot create a task with an empty string")
-	}
-
-	return *createValue, nil
+	return "", nil
 }

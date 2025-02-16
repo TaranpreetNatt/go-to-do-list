@@ -1,16 +1,21 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	cli "github.com/taranpreetnatt/todo/cmd/todo/cli"
 )
 
 func main() {
-	_, err := cli.GetArgs(os.Args)
+	file, initCsvErr := initCsvFile("todo.csv")
+	defer file.Close()
 
+	if initCsvErr != nil {
+		fmt.Errorf("Error creating tasks: %w", initCsvErr)
+	}
+	_, err := cli.GetArgs(os.Args, file)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Errorf("Error in the GetArgs function in main: %w", err)
 	}
 }
