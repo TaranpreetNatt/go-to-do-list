@@ -6,13 +6,13 @@ import (
 	"os"
 
 	tasks "github.com/taranpreetnatt/todo/internal/tasks"
+	ui "github.com/taranpreetnatt/todo/internal/ui"
 )
 
-func GetArgs(args []string, file *os.File) (string, error) {
+func GetArgs(args []string, file *os.File) error {
 	os.Args = args
 
 	flag.Func("create", "Create a task", func(s string) error {
-
 		newTask, newTaskErr := tasks.NewTask(file, s)
 		if newTaskErr != nil {
 			return fmt.Errorf("Error creating new Task: %w", newTaskErr)
@@ -25,7 +25,16 @@ func GetArgs(args []string, file *os.File) (string, error) {
 		return nil
 	})
 
+	viewFlag := flag.Bool("view", false, "View tasks")
+
 	flag.Parse()
 
-	return "", nil
+	if *viewFlag {
+		viewErr := ui.ViewTasks(file)
+		if viewErr != nil {
+			return fmt.Errorf("Error view tasks: %w", viewErr)
+		}
+	}
+
+	return nil
 }

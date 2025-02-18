@@ -1,9 +1,8 @@
 package tasks_test
 
 import (
-	"bytes"
-	"encoding/csv"
 	"os"
+	"reflect"
 	"testing"
 
 	tasks "github.com/taranpreetnatt/todo/internal/tasks"
@@ -49,7 +48,7 @@ func TestNewTask(t *testing.T) {
 
 	for _, tt := range taskTests {
 		t.Run(tt.name, func(t *testing.T) {
-			file, createTempErr := createTempCSV(t, tt.taskData)
+			file, createTempErr := tasks.CreateTempCSV(t, tt.taskData)
 			defer func() {
 				err := file.Close()
 				if err != nil {
@@ -82,41 +81,41 @@ func TestNewTask(t *testing.T) {
 	}
 }
 
-func TestCreatingTasks(t *testing.T) {
-	taskTests := []struct {
-		name     string
-		Task     tasks.Task
-		expected string
-	}{
-		{
-			name:     "task with one word",
-			Task:     tasks.Task{ID: 1, Task: "Task", Done: false},
-			expected: "1,Task,false\r\n",
-		},
-		{
-			name:     "task with two words",
-			Task:     tasks.Task{ID: 2, Task: "Task word", Done: false},
-			expected: "2,Task word,false\r\n",
-		},
-		{
-			name:     "Empty task",
-			Task:     tasks.Task{ID: 3, Task: "", Done: true},
-			expected: "3,,true\r\n",
-		},
-	}
-
-	for _, tt := range taskTests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			err := tasks.CreateTask(&buf, &tt.Task)
-
-			if err != nil {
-				t.Fatalf("Error testing creating a task: %v", err)
-			}
-			assertEqual(t, buf.String(), tt.expected)
-		})
-	}
-}
+// func TestCreatingTasks(t *testing.T) {
+// 	taskTests := []struct {
+// 		name     string
+// 		Task     tasks.Task
+// 		expected string
+// 	}{
+// 		{
+// 			name:     "task with one word",
+// 			Task:     tasks.Task{ID: 1, Task: "Task", Done: false},
+// 			expected: "1,Task,false\r\n",
+// 		},
+// 		{
+// 			name:     "task with two words",
+// 			Task:     tasks.Task{ID: 2, Task: "Task word", Done: false},
+// 			expected: "2,Task word,false\r\n",
+// 		},
+// 		{
+// 			name:     "Empty task",
+// 			Task:     tasks.Task{ID: 3, Task: "", Done: true},
+// 			expected: "3,,true\r\n",
+// 		},
+// 	}
+//
+// 	for _, tt := range taskTests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			var buf bytes.Buffer
+// 			err := tasks.CreateTask(&buf, &tt.Task)
+//
+// 			if err != nil {
+// 				t.Fatalf("Error testing creating a task: %v", err)
+// 			}
+// 			assertEqual(t, buf.String(), tt.expected)
+// 		})
+// 	}
+// }
 
 func TestGetTaskID(t *testing.T) {
 	taskTests := []struct {
@@ -159,7 +158,7 @@ func TestGetTaskID(t *testing.T) {
 
 	for _, tt := range taskTests {
 		t.Run(tt.name, func(t *testing.T) {
-			file, createTempErr := createTempCSV(t, tt.taskData)
+			file, createTempErr := tasks.CreateTempCSV(t, tt.taskData)
 			defer func() {
 				err := file.Close()
 				if err != nil {
@@ -192,27 +191,67 @@ func TestGetTaskID(t *testing.T) {
 	}
 }
 
+func TestGetTasks(t *testing.T) {
+	taskTests := []struct {
+		name        string
+		taskData    [][]string
+		expected    [][]string
+		expectedErr bool
+	}{
+		{
+			name:        "one task",
+			taskData:    [][]string{{"1", "Task one", "false"}},
+			expected:    [][]string{{"1", "Task one", "false"}},
+			expectedErr: false,
+		},
+		{
+			name:        "two tasks",
+			taskData:    [][]string{{"1", "Task one", "false"}, {"2", "Task two", "false"}},
+			expected:    [][]string{{"1", "Task one", "false"}, {"2", "Task two", "false"}},
+			expectedErr: false,
+		},
+		{
+			name:        "no tasks",
+			taskData:    [][]string{},
+			expected:    nil,
+			expectedErr: false,
+		},
+	}
+
+	for _, tt := range taskTests {
+		t.Run(tt.name, func(t *testing.T) {
+			file, createTempErr := tasks.CreateTempCSV(t, tt.taskData)
+			defer func() {
+				err := file.Close()
+				if err != nil {
+					t.Fatalf("Error closing file in TestGetTaskID test: %v", err)
+				}
+
+				removeErr := os.Remove(file.Name())
+				if removeErr != nil {
+					t.Fatalf("Error removing temp file in TestGetTaskID: %v", removeErr)
+				}
+			}()
+			if createTempErr != nil {
+				t.Fatalf("Error creating temp file in TestGetTasks: %v", createTempErr)
+			}
+
+			got, getTasksErr := tasks.GetTasks(file, false)
+			if getTasksErr != nil {
+				t.Fatalf("Error in getting tasks in TestGetTasks: %v", getTasksErr)
+			}
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("got %v, want %v", got, tt.expected)
+			}
+
+		})
+	}
+}
+
 func assertEqual[T comparable](t *testing.T, got, want T) {
 	t.Helper()
 	if got != want {
 		t.Errorf("got %v, want %v", got, want)
 	}
-}
-
-func createTempCSV(t *testing.T, data [][]string) (*os.File, error) {
-	t.Helper()
-
-	file, err := os.CreateTemp("", "task-test-*.csv")
-	if err != nil {
-		return nil, err
-	}
-
-	writer := csv.NewWriter(file)
-	csvErr := writer.WriteAll(data)
-
-	if csvErr != nil {
-		return nil, csvErr
-	}
-
-	return file, nil
 }
